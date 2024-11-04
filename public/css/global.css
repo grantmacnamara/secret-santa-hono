@@ -105,6 +105,11 @@ textarea {
 
 .btn-success {
   background-color: var(--christmas-green);
+  color: white;
+}
+
+.btn-success:hover {
+  opacity: 0.9;
 }
 
 .btn-danger {
@@ -499,4 +504,51 @@ textarea {
     display: block;
     margin: 0.5rem 0;
   }
+}
+
+.admin-match-controls {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.btn-warning {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.btn-warning:hover {
+  opacity: 0.9;
+}
+
+.admin-match-controls .btn {
+  margin-right: 0.5rem;
+}
+
+.admin-match-controls form {
+  display: inline-block;
+}
+
+.match-status-indicator {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.match-status-indicator.ready {
+  background-color: var(--christmas-green);
+  color: white;
+}
+
+.match-status-indicator.not-ready {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }

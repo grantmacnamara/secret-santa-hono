@@ -1,11 +1,13 @@
+import 'dotenv/config'
 import { Hono } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { getCookie, setCookie } from 'hono/cookie'
 import { userManager } from '../utils/userManager.js'
-import { MatchingSystem } from '../utils/matching.js'
+import { generateMatches } from '../utils/matching.js'
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
 import { renderGiftPreferences } from '../components/giftPreferences.js'
 import { flash } from '../utils/flash.js'
+import { sendMatchNotification } from '../utils/emailService.js'
 
 export const app = new Hono()
 
@@ -221,19 +223,52 @@ app.get('/admin', adminMiddleware, async (c) => {
                   }
                 </div>
               `).join('')}
-            </section>
 
-            <section>
-              <h2>Match Actions</h2>
-              <div class="admin-actions">
-                <form method="POST" action="/admin/generate-matches" style="display: inline;">
-                  <button type="submit" class="btn">Generate Matches</button>
-                </form>
-                <form method="POST" action="/admin/reset" style="display: inline;">
-                  <button type="submit" class="btn btn-danger">Reset Matches</button>
-                </form>
+              <div class="admin-match-controls" style="margin-top: 2rem;">
+                ${stats.total > 0 ? `
+                  <div class="match-status-indicator ${stats.ready === stats.total ? 'ready' : 'not-ready'}">
+                    ${stats.ready === stats.total 
+                      ? '✅ All participants are ready!' 
+                      : `⚠️ Waiting for ${stats.notReady} participant${stats.notReady !== 1 ? 's' : ''} to be ready`
+                    }
+                  </div>
+                  
+                  <form method="POST" action="/admin/match" style="display: inline-block; margin-right: 1rem;">
+                    <button type="submit" 
+                            class="btn btn-primary"
+                            ${stats.ready !== stats.total ? 'disabled' : ''}
+                            onclick="return confirm('Are you sure you want to generate matches?')">
+                      Generate Matches 🎯
+                    </button>
+                  </form>
+
+                  <form method="POST" action="/admin/rematch" style="display: inline-block; margin-right: 1rem;">
+                    <button type="submit" 
+                            class="btn btn-warning"
+                            ${stats.ready !== stats.total ? 'disabled' : ''}
+                            onclick="return confirm('Are you sure you want to clear and regenerate all matches?')">
+                      Clear & Rematch 🔄
+                    </button>
+                  </form>
+
+                  ${users.some(u => u.matchedWith) ? `
+                    <form method="POST" action="/admin/send-emails" style="display: inline-block;">
+                      <button type="submit" 
+                              class="btn btn-success"
+                              onclick="return confirm('This will send emails to all matched participants. Continue?')">
+                        Send Match Emails 📧
+                      </button>
+                    </form>
+                  ` : ''}
+                ` : '<p>No participants added yet.</p>'}
               </div>
             </section>
+
+            <div class="admin-actions" style="margin-top: 2rem; text-align: right;">
+              <form method="POST" action="/logout" style="margin: 0;">
+                <button type="submit" class="btn btn-secondary">Logout</button>
+              </form>
+            </div>
           </div>
         </div>
       </body>
@@ -405,7 +440,7 @@ app.post('/admin/generate-matches', adminMiddleware, async (c) => {
     }
 
     console.log('🎯 Starting match generation with', users.length, 'users')
-    const { matches, updatedUsers } = await MatchingSystem.generateMatches(users)
+    const { matches, updatedUsers } = await generateMatches(users)
     
     // Verify we have users before saving
     if (!updatedUsers || updatedUsers.length === 0) {
@@ -592,5 +627,104 @@ app.post('/admin/toggle-ready/:userId', adminMiddleware, async (c) => {
     })
   }
   
+  return c.redirect('/admin')
+})
+
+// Generate matches
+app.post('/admin/match', adminMiddleware, async (c) => {
+  const userManager = c.get('userManager')
+  const users = await userManager.getUsers()
+  const participants = users.filter(user => !user.isAdmin)
+
+  if (!participants.every(user => user.ready)) {
+    flash.set(c, { type: 'error', text: 'All participants must be ready before generating matches.' })
+    return c.redirect('/admin')
+  }
+
+  try {
+    const { updatedUsers } = await generateMatches(users)
+    await userManager.saveUsers(updatedUsers)
+    flash.set(c, { type: 'success', text: 'Matches generated successfully!' })
+  } catch (error) {
+    console.error('Matching error:', error)
+    flash.set(c, { type: 'error', text: 'Error generating matches: ' + error.message })
+  }
+
+  return c.redirect('/admin')
+})
+
+// Clear and regenerate matches
+app.post('/admin/rematch', adminMiddleware, async (c) => {
+  const userManager = c.get('userManager')
+  const users = await userManager.getUsers()
+  const participants = users.filter(user => !user.isAdmin)
+
+  if (!participants.every(user => user.ready)) {
+    flash.set(c, { type: 'error', text: 'All participants must be ready before regenerating matches.' })
+    return c.redirect('/admin')
+  }
+
+  try {
+    // Clear existing matches
+    const clearedUsers = users.map(user => ({
+      ...user,
+      matchedWith: null
+    }))
+
+    // Generate new matches
+    const { updatedUsers } = await generateMatches(clearedUsers)
+    await userManager.saveUsers(updatedUsers)
+    flash.set(c, { type: 'success', text: 'Matches cleared and regenerated successfully!' })
+  } catch (error) {
+    console.error('Rematching error:', error)
+    flash.set(c, { type: 'error', text: 'Error regenerating matches: ' + error.message })
+  }
+
+  return c.redirect('/admin')
+})
+
+app.post('/admin/send-emails', adminMiddleware, async (c) => {
+  const userManager = c.get('userManager')
+  const users = await userManager.getUsers()
+  const matchedUsers = users.filter(user => user.matchedWith && !user.isAdmin)
+
+  if (matchedUsers.length === 0) {
+    flash.set(c, { type: 'error', text: 'No matches found to send emails for.' })
+    return c.redirect('/admin')
+  }
+
+  try {
+    let emailsSent = 0
+    let emailErrors = 0
+    
+    for (const giver of matchedUsers) {
+      try {
+        const receiver = users.find(u => u.id === giver.matchedWith)
+        if (giver.email && receiver) {
+          await sendMatchNotification(giver, receiver)
+          emailsSent++
+        }
+      } catch (err) {
+        console.error(`Failed to send email to ${giver.email}:`, err)
+        emailErrors++
+      }
+    }
+
+    if (emailErrors > 0) {
+      flash.set(c, { 
+        type: 'warning', 
+        text: `Sent ${emailsSent} emails, but ${emailErrors} failed. Check console for details.` 
+      })
+    } else {
+      flash.set(c, { 
+        type: 'success', 
+        text: `Successfully sent ${emailsSent} match notification email${emailsSent !== 1 ? 's' : ''}!` 
+      })
+    }
+  } catch (error) {
+    console.error('Email error:', error)
+    flash.set(c, { type: 'error', text: 'Error sending emails: ' + error.message })
+  }
+
   return c.redirect('/admin')
 })

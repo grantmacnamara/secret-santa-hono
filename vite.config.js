@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import devServer from '@hono/vite-dev-server'
+import dotenv from 'dotenv'
 
+dotenv.config()
 export default defineConfig({
   plugins: [
     devServer({

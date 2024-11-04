@@ -1,77 +1,72 @@
 import nodemailer from 'nodemailer'
 import 'dotenv/config'
 
-class EmailService {
-  constructor() {
-    console.log('📧 Initializing Email Service...')
-    
-    // Verify we have email credentials
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error('📧 Missing email credentials in .env file')
-      throw new Error('Email credentials not configured')
-    }
+// Log environment variables (temporarily, for debugging)
+console.log('Email Config:', {
+  host: process.env.SMTP_HOST,
+  user: process.env.SMTP_USER,
+  pass: process.env.SMTP_PASS?.substring(0, 3) + '...' // Only log first 3 chars of password
+})
 
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    })
+// Create Gmail transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',  // Using Gmail service
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,  // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS, // Your app-specific password
+  },
+  tls: {
+    rejectUnauthorized: false // Only use during development
+  }
+})
 
-    // Log email configuration (without password)
-    console.log('📧 Email Service configured with:', {
-      host: 'smtp.gmail.com',
-      user: process.env.EMAIL_USER,
-      port: 587
-    })
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log('❌ Email service error:', error);
+  } else {
+    console.log('✅ Email server is ready to send messages');
+  }
+});
+
+export async function sendMatchNotification(giver, receiver) {
+  const mailOptions = {
+    from: process.env.SMTP_FROM,
+    to: giver.email,
+    subject: '🎄 Your Secret Santa Match!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #c41e3a;">Ho Ho Ho! 🎅</h1>
+        <p>Hello ${giver.username}!</p>
+        <p>You have been matched with <strong>${receiver.username}</strong> for the Secret Santa gift exchange!</p>
+        
+        ${receiver.giftPreferences ? `
+          <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h2 style="color: #2e7d32; margin-top: 0;">Their Gift Preferences:</h2>
+            <p><strong>Likes:</strong> ${receiver.giftPreferences.likes?.join(', ') || 'None listed'}</p>
+            <p><strong>Dislikes:</strong> ${receiver.giftPreferences.dislikes?.join(', ') || 'None listed'}</p>
+          </div>
+        ` : ''}
+        
+        <p style="color: #666;">Remember to keep it a secret! 🤫</p>
+        <p style="color: #c41e3a;">Happy gifting! 🎁</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 12px; color: #666;">
+          This email was sent from the Secret Santa Gift Exchange application.
+        </p>
+      </div>
+    `
   }
 
-  async sendMatchNotification(user, match) {
-    if (!user.email) {
-      console.log(`📧 Skipping email for ${user.username} - no email address`)
-      return
-    }
-
-    console.log(`📧 Preparing to send match notification email to ${user.username} (${user.email})`)
-    
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: '🎄 Your Secret Santa Match is Ready! 🎁',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #165B33;">Your Secret Santa Match</h1>
-          <p>Hello ${user.username}!</p>
-          <p>Your Secret Santa match has been generated. Log in to see who you'll be buying a gift for!</p>
-          <p style="margin: 20px 0;">
-            <a href="${process.env.APP_URL || 'http://localhost:3000'}" 
-               style="background-color: #D42426; color: white; padding: 10px 20px; 
-                      text-decoration: none; border-radius: 5px;">
-              View Your Match
-            </a>
-          </p>
-          <p>Happy gifting! 🎁</p>
-        </div>
-      `
-    }
-
-    try {
-      console.log('📧 Attempting to send email...')
-      await this.transporter.sendMail(mailOptions)
-      console.log('📧 Email sent successfully to:', user.email)
-    } catch (error) {
-      console.error('❌ Email sending failed:', error.message)
-      console.error('Details:', {
-        user: user.username,
-        email: user.email,
-        error: error.toString()
-      })
-      throw error // Re-throw to handle in calling code
-    }
+  try {
+    await transporter.sendMail(mailOptions)
+    console.log(`📧 Email sent successfully to ${giver.email}`)
+  } catch (error) {
+    console.error(`📧 Error sending email to ${giver.email}:`, error)
+    throw error
   }
-}
-
-export default EmailService 
+} 
