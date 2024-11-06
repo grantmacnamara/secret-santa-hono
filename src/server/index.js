@@ -63,11 +63,9 @@ app.use('/*', authMiddleware)
 app.get('/admin', adminMiddleware, async (c) => {
   const userManager = c.get('userManager')
   const allUsers = await userManager.getUsers()
-  // Filter out admin users for display and ensure users is always an array
   const users = allUsers?.filter(user => !user.isAdmin) || []
   const message = flash.get(c)
 
-  // Add defensive stats calculation
   const stats = {
     total: users.length || 0,
     ready: users.filter(user => user.ready).length || 0,
@@ -80,6 +78,7 @@ app.get('/admin', adminMiddleware, async (c) => {
       <head>
         <title>Secret Santa Admin</title>
         <link rel="stylesheet" href="/public/css/global.css">
+        <link rel="stylesheet" href="/public/css/notifications.css">
         <style>
           .user-row {
             display: flex;
