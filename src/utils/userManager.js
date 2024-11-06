@@ -2,6 +2,10 @@ import fs from 'fs/promises'
 import bcrypt from 'bcryptjs'
 import { join } from 'path'
 
+function generateRandomPassword() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 class UserManager {
   constructor() {
     this.filePath = join(process.cwd(), 'users.json')
@@ -93,24 +97,32 @@ class UserManager {
     return valid ? user : null
   }
 
-  async addUser(username, password, isAdmin = false, email) {
-    const users = await this.getUsers()
-    const hashedPassword = await bcrypt.hash(password, 10)
+  async getNextId() {
+    const users = await this.getUsers();
+    if (users.length === 0) return 1;
+    return Math.max(...users.map(user => user.id)) + 1;
+  }
+
+  async addUser(username, email, isAdmin = false) {
+    const password = generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(password, 10);
     
     const newUser = {
-      id: users.length + 1,
+      id: await this.getNextId(),
       username,
-      email: email || `${username}@example.com`,
+      email,
       password: hashedPassword,
+      clearPassword: password,
       isAdmin,
       ready: false,
       matchedWith: null,
       giftPreferences: this.getDefaultPreferences()
-    }
+    };
     
-    users.push(newUser)
-    await this.saveUsers(users)
-    return newUser
+    const users = await this.getUsers();
+    users.push(newUser);
+    await this.saveUsers(users);
+    return newUser;
   }
 
   async updateUser(id, updates) {

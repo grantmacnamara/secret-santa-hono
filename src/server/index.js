@@ -144,10 +144,6 @@ app.get('/admin', adminMiddleware, async (c) => {
                   <label for="email">Email:</label>
                   <input type="email" id="email" name="email" required>
                 </div>
-                <div class="form-group">
-                  <label for="password">Password:</label>
-                  <input type="password" id="password" name="password" required>
-                </div>
                 <button type="submit" class="btn">Add User</button>
               </form>
             </section>
@@ -163,6 +159,7 @@ app.get('/admin', adminMiddleware, async (c) => {
                 <div class="user-row">
                   <span>${user.username}</span>
                   <span>(${user.email})</span>
+                  <span class="user-password">${user.clearPassword || 'N/A'}</span>
                   <div class="user-actions">
                     <form method="POST" action="/admin/toggle-ready/${user.id}" style="margin: 0;">
                       <button type="submit" 
@@ -294,28 +291,20 @@ app.get('/', async (c) => {
 
 // Admin API routes
 app.post('/admin/users', adminMiddleware, async (c) => {
+  const userManager = c.get('userManager')
+  const { username, email } = await c.req.parseBody()
+  
+  console.log('Creating user with data:', { username, email })
+  
   try {
-    const formData = await c.req.parseBody()
-    console.log('Creating user with data:', {
-      username: formData.username,
-      email: formData.email
-    })
-    
-    const userManager = c.get('userManager')
-    await userManager.addUser(
-      formData.username,
-      formData.password,
-      false,
-      formData.email
-    )
-    
-    flash.set(c, { type: 'success', text: 'User added successfully' })
+    const user = await userManager.addUser(username, email)
+    flash.set(c, { type: 'success', text: `User ${username} created successfully! Password: ${user.clearPassword}` })
+    return c.redirect('/admin')
   } catch (error) {
     console.error('User creation error:', error)
-    flash.set(c, { type: 'error', text: 'Failed to add user' })
+    flash.set(c, { type: 'error', text: 'Error creating user' })
+    return c.redirect('/admin')
   }
-  
-  return c.redirect('/admin')
 })
 
 app.post('/admin/users/:id/delete', async (c) => {
