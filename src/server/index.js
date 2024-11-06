@@ -11,6 +11,7 @@ import { sendMatchNotification } from '../utils/emailService.js'
 import { renderWelcomeSteps } from '../components/welcomeSteps.js'
 import { createNotification } from '../utils/notifications.js'
 import { renderLoginPage } from '../pages/login.js'
+import { renderDashboard } from '../pages/dashboard.js'
 
 export const app = new Hono()
 
@@ -278,8 +279,6 @@ app.post('/admin/logout', (c) => {
 // Home route
 app.get('/', async (c) => {
   const user = c.get('user')
-  const allUsers = await userManager.getUsers()
-  const match = user.matchedWith ? allUsers.find(u => u.id === user.matchedWith) : null
   const message = flash.get(c)
   const config = await userManager.getConfig()
 
@@ -291,48 +290,7 @@ app.get('/', async (c) => {
     }
   }
 
-  // Debug the flash message
-  const flashMessage = flash.get(c)
-  console.log('Flash message:', flashMessage)
-  
-  const notificationHtml = flashMessage 
-    ? createNotification(flashMessage.type, flashMessage.message)
-    : ''
-
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Secret Santa Dashboard</title>
-        <link rel="stylesheet" href="/public/css/global.css">
-      </head>
-      <body>
-        ${notificationHtml}
-        <div class="container">
-          <div class="card">
-            <div class="dashboard-header">
-              <h1>Welcome, ${user.username}! 🎄</h1>
-              ${user.ready ? 
-                '<span class="status-badge ready">Ready for Matching</span>' : 
-                '<span class="status-badge pending">Not Ready</span>'
-              }
-            </div>
-
-            ${renderWelcomeSteps()}
-
-            <div class="preferences-section">
-              ${renderGiftPreferences(user.giftPreferences, config, user)}
-            </div>
-
-            <form method="POST" action="/logout" class="logout-form">
-              <button type="submit" class="btn btn-secondary">Logout</button>
-            </form>
-          </div>
-        </div>
-        <script src="/public/js/snowflakes.js"></script>
-      </body>
-    </html>
-  `)
+  return c.html(renderDashboard(user, config, message))
 })
 
 // Admin API routes
