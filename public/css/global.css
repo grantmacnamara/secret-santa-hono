@@ -6,6 +6,7 @@
   --pine-green: #1a472a;
   --gold: #FFD700;
   --silver: #C0C0C0;
+  --base-spacing: 1rem;
 }
 
 body {
@@ -720,4 +721,201 @@ button[disabled][formaction="/ready"]:hover::after {
 .next-steps p {
   margin: 0.5rem 0;
   line-height: 1.5;
+}
+
+/* Responsive typography */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 18px; /* Larger base font size for mobile */
+  }
+}
+
+/* Container adjustments */
+.container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--base-spacing);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: calc(var(--base-spacing) * 1.5);
+  }
+}
+
+/* Headers and text */
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-bottom: 1.25rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.75rem; }
+}
+
+/* Form elements */
+.preference-inputs input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .preference-inputs input {
+    padding: 1.2rem;
+    font-size: 1.2rem;
+  }
+}
+
+/* Labels */
+label {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  color: var(--christmas-green);
+}
+
+/* Buttons */
+.btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .btn {
+    padding: 1.2rem 2.5rem;
+    font-size: 1.2rem;
+    width: 100%; /* Full width on mobile */
+    margin-bottom: 1rem;
+  }
+}
+
+/* Preferences confirmation view */
+.preferences-confirmation {
+  padding: 2rem;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .preferences-confirmation {
+    padding: 1.5rem;
+  }
+}
+
+.saved-preferences {
+  margin: 2rem 0;
+}
+
+.preference-section {
+  margin-bottom: 2rem;
+}
+
+.preference-section ul li {
+  padding: 1rem;
+  font-size: 1.1rem;
+  margin: 0.75rem 0;
+}
+
+@media (max-width: 768px) {
+  .preference-section ul li {
+    padding: 1.2rem;
+    font-size: 1.2rem;
+  }
+}
+
+/* Next steps section */
+.next-steps {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+}
+
+.next-steps p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .next-steps p {
+    font-size: 1.2rem;
+    line-height: 1.7;
+  }
+}
+
+/* Notifications */
+.notification {
+  padding: 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .notification {
+    padding: 1.5rem;
+    font-size: 1.2rem;
+  }
+}
+
+/* Price range display */
+.price-range-display {
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .price-range-display {
+    font-size: 1.5rem;
+  }
+}
+
+/* Status badges */
+.status-badge {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+@media (max-width: 768px) {
+  .status-badge {
+    font-size: 1.1rem;
+    padding: 0.6rem 1.2rem;
+  }
+}
+
+/* Add touch-friendly spacing */
+@media (max-width: 768px) {
+  * {
+    touch-action: manipulation;
+  }
+  
+  input, button {
+    min-height: 44px; /* Minimum touch target size */
+  }
 }
