@@ -8,6 +8,10 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
 import { renderGiftPreferences } from '../components/giftPreferences.js'
 import { flash } from '../utils/flash.js'
 import { sendMatchNotification } from '../utils/emailService.js'
+import { renderWelcomeSteps } from '../components/welcomeSteps.js'
+import { createNotification } from '../utils/notifications.js'
+import { renderLoginPage } from '../pages/login.js'
+import { renderDashboard } from '../pages/dashboard.js'
 
 export const app = new Hono()
 
@@ -22,74 +26,32 @@ app.use('*', async (c, next) => {
 app.use('/public/*', serveStatic({ root: './' }))
 
 // Public routes
-app.get('/login', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Login - Secret Santa</title>
-        <link rel="stylesheet" href="/public/css/global.css">
-      </head>
-      <body>
-        <div class="container">
-          <div class="card">
-            <h1>Secret Santa Login</h1>
-            <form action="/login" method="POST" class="login-form">
-              <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-              </div>
-              <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-              </div>
-              <button type="submit" class="btn">Login</button>
-            </form>
-          </div>
-        </div>
-      </body>
-    </html>
-  `)
+app.get('/login', async (c) => {
+  const message = flash.get(c)
+  return c.html(renderLoginPage(message))
 })
 
 app.post('/login', async (c) => {
+  const { username, password } = await c.req.parseBody()
+  const userManager = c.get('userManager')
+  
   try {
-    const { username, password } = await c.req.parseBody()
-    console.log('Login attempt:', { username })
-
     const user = await userManager.validateUser(username, password)
-    console.log('Validation result:', user ? 'Success' : 'Failed')
-
     if (!user) {
-      return c.html(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Login Failed</title>
-            <meta http-equiv="refresh" content="3;url=/login">
-            <link rel="stylesheet" href="/public/css/global.css">
-          </head>
-          <body>
-            <div class="container">
-              <div class="card">
-                <h1>Login Failed</h1>
-                <p>Invalid username or password. Redirecting back to login...</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `)
+      flash.set(c, { type: 'error', text: 'Invalid username or password' })
+      return c.html(renderLoginPage({ type: 'error', text: 'Invalid username or password' }))
     }
 
     setCookie(c, 'userId', user.id.toString(), {
-      httpOnly: true,
-      path: '/'
+      path: '/',
+      httpOnly: true
     })
 
     return c.redirect(user.isAdmin ? '/admin' : '/')
   } catch (error) {
     console.error('Login error:', error)
-    return c.text('Login error occurred', 500)
+    flash.set(c, { type: 'error', text: 'An error occurred during login' })
+    return c.html(renderLoginPage({ type: 'error', text: 'An error occurred during login' }))
   }
 })
 
@@ -101,11 +63,9 @@ app.use('/*', authMiddleware)
 app.get('/admin', adminMiddleware, async (c) => {
   const userManager = c.get('userManager')
   const allUsers = await userManager.getUsers()
-  // Filter out admin users for display and ensure users is always an array
   const users = allUsers?.filter(user => !user.isAdmin) || []
   const message = flash.get(c)
 
-  // Add defensive stats calculation
   const stats = {
     total: users.length || 0,
     ready: users.filter(user => user.ready).length || 0,
@@ -118,6 +78,7 @@ app.get('/admin', adminMiddleware, async (c) => {
       <head>
         <title>Secret Santa Admin</title>
         <link rel="stylesheet" href="/public/css/global.css">
+        <link rel="stylesheet" href="/public/css/notifications.css">
         <style>
           .user-row {
             display: flex;
@@ -271,6 +232,7 @@ app.get('/admin', adminMiddleware, async (c) => {
             </div>
           </div>
         </div>
+        <script src="/public/js/snowflakes.js"></script>
       </body>
     </html>
   `)
@@ -316,8 +278,6 @@ app.post('/admin/logout', (c) => {
 // Home route
 app.get('/', async (c) => {
   const user = c.get('user')
-  const allUsers = await userManager.getUsers()
-  const match = user.matchedWith ? allUsers.find(u => u.id === user.matchedWith) : null
   const message = flash.get(c)
   const config = await userManager.getConfig()
 
@@ -329,73 +289,7 @@ app.get('/', async (c) => {
     }
   }
 
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Secret Santa Dashboard</title>
-        <link rel="stylesheet" href="/public/css/global.css">
-      </head>
-      <body>
-        ${message ? `
-          <div class="notification notification-${message.type}">
-            ${message.text}
-            <button onclick="this.parentElement.remove()" class="notification-close">&times;</button>
-          </div>
-        ` : ''}
-        <div class="container">
-          <div class="card">
-            <div class="dashboard-header">
-              <h1>Welcome, ${user.username}! 🎄</h1>
-              ${user.ready ? 
-                '<span class="status-badge ready">Ready for Matching</span>' : 
-                '<span class="status-badge pending">Not Ready</span>'
-              }
-            </div>
-
-            <div class="preferences-section">
-              <h2>Your Gift Preferences</h2>
-              <form method="POST" action="/preferences" class="preferences-form">
-                ${renderGiftPreferences(user.giftPreferences, config)}
-                <div class="form-actions">
-                  <button type="submit" class="btn">Save Preferences</button>
-                </div>
-              </form>
-            </div>
-
-            ${match ? `
-              <div class="match-card">
-                <h2>Your Secret Santa Match 🎁</h2>
-                <div class="match-details">
-                  <h3>You are buying for: ${match.username}</h3>
-                  ${match.giftPreferences ? `
-                    <div class="match-preferences">
-                      <h4>Their Preferences:</h4>
-                      <div class="preference-summary">
-                        <p><strong>Likes:</strong> ${match.giftPreferences.likes?.join(', ') || 'None listed'}</p>
-                        <p><strong>Dislikes:</strong> ${match.giftPreferences.dislikes?.join(', ') || 'None listed'}</p>
-                      </div>
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            ` : ''}
-
-            <div class="card action-card">
-              <form method="POST" action="/ready" class="ready-form">
-                <button type="submit" class="btn ${user.ready ? 'btn-success' : 'btn-primary'}">
-                  ${user.ready ? 'I\'m Ready! ✓' : 'Mark as Ready'}
-                </button>
-              </form>
-              <form method="POST" action="/logout" class="logout-form">
-                <button type="submit" class="btn btn-secondary">Logout</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </body>
-    </html>
-  `)
+  return c.html(renderDashboard(user, config, message))
 })
 
 // Admin API routes
@@ -499,35 +393,27 @@ app.post('/preferences', async (c) => {
     const user = c.get('user')
     const body = await c.req.parseBody()
     
-    // Get likes and dislikes from form, ensuring they're arrays
-    const likes = [
-      body['likes[0]'] || '',
-      body['likes[1]'] || ''
-    ].filter(Boolean)
-
-    const dislikes = [
-      body['dislikes[0]'] || '',
-      body['dislikes[1]'] || ''
-    ].filter(Boolean)
-
-    if (likes.length !== 2 || dislikes.length !== 2) {
-      throw new Error('Please provide exactly two likes and two dislikes')
+    // Update preferences and set ready status
+    user.giftPreferences = {
+      likes: [body['likes[0]'], body['likes[1]']],
+      dislikes: [body['dislikes[0]'], body['dislikes[1]']],
     }
-
-    await userManager.updateUser(user.id, {
-      giftPreferences: { likes, dislikes }
-    })
-
+    user.ready = true
+    
+    await userManager.updateUser(user.id, user)
+    
+    // Set flash message with correct structure
     flash.set(c, {
       type: 'success',
-      text: 'Preferences updated successfully!'
+      text: 'Preferences saved! You\'ll receive an email when matches are made.'
     })
-
+    
     return c.redirect('/')
   } catch (error) {
+    console.error('Preference save error:', error)
     flash.set(c, {
       type: 'error',
-      text: error.message || 'Failed to update preferences'
+      text: 'Error saving preferences. Please try again.'
     })
     return c.redirect('/')
   }
