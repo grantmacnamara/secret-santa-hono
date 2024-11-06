@@ -38,27 +38,19 @@ Create a `.env` file in the root directory with the following variables:
 ```env
 # Server Configuration
 PORT=3000
-HOST=localhost
+NODE_ENV=development
+APP_URL=http://localhost:3000
 
-# JWT Secret (generate a secure random string)
-JWT_SECRET=your_jwt_secret_here
+# Session Security
+SESSION_SECRET=your-secret-key-change-this-in-production
 
-# Email Configuration
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your_email@example.com
-SMTP_PASS=your_email_password
-SMTP_FROM=Secret Santa <noreply@example.com>
+# Email Configuration (Gmail)
+EMAIL_USER=your-gmail@gmail.com
+EMAIL_PASS=your-16-digit-app-password
+SMTP_FROM=Secret Santa <your-gmail@gmail.com>
 
-# Admin Configuration
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_secure_password
-ADMIN_EMAIL=admin@example.com
-
-# Gift Exchange Configuration
-MIN_PRICE=20
-MAX_PRICE=50
-CURRENCY=USD
+# Optional
+DEBUG=false
 ```
 
 4. **Initialize configuration files**
@@ -164,9 +156,10 @@ secret-santa/
 ### Common Issues
 
 1. **Emails not sending**
-   - Check SMTP credentials
-   - Verify port is not blocked
+   - Verify Gmail App Password is correct
+   - Ensure 2-Step Verification is enabled
    - Check spam folders
+   - Verify EMAIL_USER matches SMTP_FROM address
 
 2. **Matching not working**
    - Ensure at least 2 ready participants
@@ -185,6 +178,15 @@ secret-santa/
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
+
+### Email Setup Instructions
+1. Use a Gmail account
+2. Enable 2-Step Verification in your Google Account
+3. Generate an App Password:
+   - Go to Google Account → Security
+   - Find "2-Step Verification" → App Passwords
+   - Select "Mail" and "Other (Custom name)"
+   - Copy the 16-digit password to EMAIL_PASS in your .env file
 
 
 
