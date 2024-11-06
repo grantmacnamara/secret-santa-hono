@@ -5,6 +5,8 @@ export function renderLoginPage(message = null) {
       <head>
         <title>Macnamara's Secret Santa</title>
         <link rel="stylesheet" href="/public/css/global.css">
+        <link rel="stylesheet" href="/public/css/login.css">
+        <link rel="stylesheet" href="/public/css/notifications.css">
         <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
