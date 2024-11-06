@@ -10,6 +10,7 @@ import { flash } from '../utils/flash.js'
 import { sendMatchNotification } from '../utils/emailService.js'
 import { renderWelcomeSteps } from '../components/welcomeSteps.js'
 import { createNotification } from '../utils/notifications.js'
+import { renderLoginPage } from '../pages/login.js'
 
 export const app = new Hono()
 
@@ -24,74 +25,32 @@ app.use('*', async (c, next) => {
 app.use('/public/*', serveStatic({ root: './' }))
 
 // Public routes
-app.get('/login', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Login - Secret Santa</title>
-        <link rel="stylesheet" href="/public/css/global.css">
-      </head>
-      <body>
-        <div class="container">
-          <div class="card">
-            <h1>Secret Santa Login</h1>
-            <form action="/login" method="POST" class="login-form">
-              <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-              </div>
-              <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-              </div>
-              <button type="submit" class="btn">Login</button>
-            </form>
-          </div>
-        </div>
-      </body>
-    </html>
-  `)
+app.get('/login', async (c) => {
+  const message = flash.get(c)
+  return c.html(renderLoginPage(message))
 })
 
 app.post('/login', async (c) => {
+  const { username, password } = await c.req.parseBody()
+  const userManager = c.get('userManager')
+  
   try {
-    const { username, password } = await c.req.parseBody()
-    console.log('Login attempt:', { username })
-
     const user = await userManager.validateUser(username, password)
-    console.log('Validation result:', user ? 'Success' : 'Failed')
-
     if (!user) {
-      return c.html(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Login Failed</title>
-            <meta http-equiv="refresh" content="3;url=/login">
-            <link rel="stylesheet" href="/public/css/global.css">
-          </head>
-          <body>
-            <div class="container">
-              <div class="card">
-                <h1>Login Failed</h1>
-                <p>Invalid username or password. Redirecting back to login...</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `)
+      flash.set(c, { type: 'error', text: 'Invalid username or password' })
+      return c.html(renderLoginPage({ type: 'error', text: 'Invalid username or password' }))
     }
 
     setCookie(c, 'userId', user.id.toString(), {
-      httpOnly: true,
-      path: '/'
+      path: '/',
+      httpOnly: true
     })
 
     return c.redirect(user.isAdmin ? '/admin' : '/')
   } catch (error) {
     console.error('Login error:', error)
-    return c.text('Login error occurred', 500)
+    flash.set(c, { type: 'error', text: 'An error occurred during login' })
+    return c.html(renderLoginPage({ type: 'error', text: 'An error occurred during login' }))
   }
 })
 
@@ -273,6 +232,7 @@ app.get('/admin', adminMiddleware, async (c) => {
             </div>
           </div>
         </div>
+        <script src="/public/js/snowflakes.js"></script>
       </body>
     </html>
   `)
@@ -369,6 +329,7 @@ app.get('/', async (c) => {
             </form>
           </div>
         </div>
+        <script src="/public/js/snowflakes.js"></script>
       </body>
     </html>
   `)
