@@ -95,8 +95,10 @@ textarea {
 }
 
 .btn:disabled {
-  background-color: var(--silver);
+  opacity: 0.6;
   cursor: not-allowed;
+  background-color: #ccc;
+  border-color: #ccc;
 }
 
 .btn-secondary {
@@ -551,4 +553,128 @@ textarea {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.welcome-steps {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid var(--christmas-green);
+}
+
+.steps-list {
+  list-style: none;
+  counter-reset: steps;
+  padding: 0;
+}
+
+.steps-list li {
+  margin: 1rem 0;
+  padding: 0.8rem;
+  background: white;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  counter-increment: steps;
+}
+
+.steps-list li::before {
+  content: counter(steps);
+  background: var(--christmas-green);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.action-buttons form {
+  margin: 0;
+}
+
+.action-buttons button {
+  min-width: 150px;
+}
+
+.logout-form {
+  margin-top: 2rem;
+  border-top: 1px solid #ddd;
+  padding-top: 1rem;
+}
+
+.preference-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 2rem;
+  position: relative;
+}
+
+.preference-actions button {
+  min-width: 150px;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Add tooltip for disabled buttons */
+.btn:disabled:hover::after {
+  content: "Please save your preferences first";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: 5px;
+  z-index: 1;
+}
+
+.btn-secondary:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background-color: var(--christmas-green);
+  border-color: var(--christmas-green);
+}
+
+.btn-success:hover {
+  background-color: #1e7e34;
+  border-color: #1e7e34;
+}
+
+/* Tooltip for disabled ready button */
+button[disabled][formaction="/ready"]:hover::after {
+  content: "Save your preferences first!";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: 5px;
+  z-index: 1;
 }

@@ -8,6 +8,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
 import { renderGiftPreferences } from '../components/giftPreferences.js'
 import { flash } from '../utils/flash.js'
 import { sendMatchNotification } from '../utils/emailService.js'
+import { renderWelcomeSteps } from '../components/welcomeSteps.js'
 
 export const app = new Hono()
 
@@ -353,44 +354,15 @@ app.get('/', async (c) => {
               }
             </div>
 
+            ${renderWelcomeSteps()}
+
             <div class="preferences-section">
-              <h2>Your Gift Preferences</h2>
-              <form method="POST" action="/preferences" class="preferences-form">
-                ${renderGiftPreferences(user.giftPreferences, config)}
-                <div class="form-actions">
-                  <button type="submit" class="btn">Save Preferences</button>
-                </div>
-              </form>
+              ${renderGiftPreferences(user.giftPreferences, config, user)}
             </div>
 
-            ${match ? `
-              <div class="match-card">
-                <h2>Your Secret Santa Match 🎁</h2>
-                <div class="match-details">
-                  <h3>You are buying for: ${match.username}</h3>
-                  ${match.giftPreferences ? `
-                    <div class="match-preferences">
-                      <h4>Their Preferences:</h4>
-                      <div class="preference-summary">
-                        <p><strong>Likes:</strong> ${match.giftPreferences.likes?.join(', ') || 'None listed'}</p>
-                        <p><strong>Dislikes:</strong> ${match.giftPreferences.dislikes?.join(', ') || 'None listed'}</p>
-                      </div>
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            ` : ''}
-
-            <div class="card action-card">
-              <form method="POST" action="/ready" class="ready-form">
-                <button type="submit" class="btn ${user.ready ? 'btn-success' : 'btn-primary'}">
-                  ${user.ready ? 'I\'m Ready! ✓' : 'Mark as Ready'}
-                </button>
-              </form>
-              <form method="POST" action="/logout" class="logout-form">
-                <button type="submit" class="btn btn-secondary">Logout</button>
-              </form>
-            </div>
+            <form method="POST" action="/logout" class="logout-form">
+              <button type="submit" class="btn btn-secondary">Logout</button>
+            </form>
           </div>
         </div>
       </body>

@@ -1,36 +1,32 @@
 import nodemailer from 'nodemailer'
 import 'dotenv/config'
 
-// Log environment variables (temporarily, for debugging)
-console.log('Email Config:', {
-  host: process.env.SMTP_HOST,
-  user: process.env.SMTP_USER,
-  pass: process.env.SMTP_PASS?.substring(0, 3) + '...' // Only log first 3 chars of password
+// Debug the environment variables
+console.log('Email Environment Variables:', {
+  user: process.env.EMAIL_USER,
+  pass: process.env.EMAIL_PASS ? '****' : undefined,
+  from: process.env.SMTP_FROM
 })
 
-// Create Gmail transporter
+// Create the transporter with explicit Gmail configuration
 const transporter = nodemailer.createTransport({
-  service: 'gmail',  // Using Gmail service
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,  // true for 465, false for other ports
+  port: 465,
+  secure: true, // use SSL
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Your app-specific password
-  },
-  tls: {
-    rejectUnauthorized: false // Only use during development
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 })
 
-// Verify connection configuration
-transporter.verify(function (error, success) {
+// Test the connection on startup
+transporter.verify(function(error, success) {
   if (error) {
-    console.log('❌ Email service error:', error);
+    console.error('\x1b[31m%s\x1b[0m', '❌ Email service error:', error)
   } else {
-    console.log('✅ Email server is ready to send messages');
+    console.log('✅ Email service is ready')
   }
-});
+})
 
 export async function sendMatchNotification(giver, receiver) {
   const mailOptions = {
@@ -52,11 +48,11 @@ export async function sendMatchNotification(giver, receiver) {
         ` : ''}
         
         <p style="color: #666;">Remember to keep it a secret! 🤫</p>
-        <p style="color: #c41e3a;">Happy gifting! 🎁</p>
+        <p style="color: #c41e3a;">Happy Christmas and good luck! 🎁</p>
         
         <hr style="border: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 12px; color: #666;">
-          This email was sent from the Secret Santa Gift Exchange application.
+          This email was sent from the Macnamara Secret Santa Gift app.
         </p>
       </div>
     `
