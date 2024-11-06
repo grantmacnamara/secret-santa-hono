@@ -1,4 +1,4 @@
-export function renderLoginPage(message = null) {
+export function renderLoginPage(message = null, username = '') {
   return `
     <!DOCTYPE html>
     <html>
@@ -131,6 +131,7 @@ export function renderLoginPage(message = null) {
                 <input type="text" 
                        id="username" 
                        name="username" 
+                       value="${username}"
                        required 
                        autocomplete="username"
                        autocapitalize="none">

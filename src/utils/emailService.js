@@ -65,4 +65,48 @@ export async function sendMatchNotification(giver, receiver) {
     console.error(`📧 Error sending email to ${giver.email}:`, error)
     throw error
   }
+}
+
+export async function sendInviteEmail(user, appUrl) {
+  const mailOptions = {
+    from: process.env.SMTP_FROM,
+    to: user.email,
+    subject: '🎄 Your Secret Santa Invitation!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #c41e3a;">Welcome to Secret Santa! 🎅</h1>
+        <p>Hello!</p>
+        <p>You've been invited to participate in this year's Secret Santa gift exchange!</p>
+        
+        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h2 style="color: #2e7d32; margin-top: 0;">Your Login Details:</h2>
+          <p><strong>Username:</strong> ${user.username}</p>
+          <p><strong>Password:</strong> ${user.clearPassword}</p>
+        </div>
+        
+        <p>Click the link below to log in:</p>
+        <a href="${appUrl}/login?username=${encodeURIComponent(user.username)}" 
+           style="display: inline-block; background-color: #c41e3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+          Login to Secret Santa
+        </a>
+        
+        <p style="color: #666;">Please log in and set your gift preferences as soon as possible!</p>
+        <p style="color: #c41e3a;">Happy Christmas! 🎁</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 12px; color: #666;">
+          This email was sent from the Macnamara Secret Santa Gift app.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Invite email sent successfully to ${user.email}`);
+    return true;
+  } catch (error) {
+    console.error(`📧 Error sending invite email to ${user.email}:`, error);
+    throw error;
+  }
 } 

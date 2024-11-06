@@ -7,7 +7,7 @@ import { generateMatches } from '../utils/matching.js'
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
 import { renderGiftPreferences } from '../components/giftPreferences.js'
 import { flash } from '../utils/flash.js'
-import { sendMatchNotification } from '../utils/emailService.js'
+import { sendMatchNotification, sendInviteEmail } from '../utils/emailService.js'
 import { renderWelcomeSteps } from '../components/welcomeSteps.js'
 import { createNotification } from '../utils/notifications.js'
 import { renderLoginPage } from '../pages/login.js'
@@ -28,7 +28,8 @@ app.use('/public/*', serveStatic({ root: './' }))
 // Public routes
 app.get('/login', async (c) => {
   const message = flash.get(c)
-  return c.html(renderLoginPage(message))
+  const username = c.req.query('username') || ''
+  return c.html(renderLoginPage(message, username))
 })
 
 app.post('/login', async (c) => {
@@ -155,6 +156,11 @@ app.get('/admin', adminMiddleware, async (c) => {
                 <p>Ready: ${stats.ready}</p>
                 <p>Not Ready: ${stats.notReady}</p>
               </div>
+              <form method="POST" action="/admin/send-invites" style="margin-bottom: 1rem;">
+                <button type="submit" class="btn btn-primary">
+                  📧 Send Invites to Users
+                </button>
+              </form>
               ${users.map(user => `
                 <div class="user-row">
                   <span>${user.username}</span>
@@ -603,3 +609,30 @@ app.post('/admin/send-emails', adminMiddleware, async (c) => {
 
   return c.redirect('/admin')
 })
+
+app.post('/admin/send-invites', adminMiddleware, async (c) => {
+  const userManager = c.get('userManager');
+  const users = await userManager.getUsers();
+  const nonAdminUsers = users.filter(user => !user.isAdmin);
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  
+  let successCount = 0;
+  let errorCount = 0;
+  
+  for (const user of nonAdminUsers) {
+    try {
+      await sendInviteEmail(user, appUrl);
+      successCount++;
+    } catch (error) {
+      console.error(`Failed to send invite to ${user.email}:`, error);
+      errorCount++;
+    }
+  }
+  
+  flash.set(c, { 
+    type: errorCount === 0 ? 'success' : 'error',
+    text: `Sent ${successCount} invites${errorCount > 0 ? `, ${errorCount} failed` : ''}`
+  });
+  
+  return c.redirect('/admin');
+});
