@@ -9,6 +9,7 @@ export function renderDashboard(user, config, message = null) {
         <title>Secret Santa Dashboard</title>
         <link rel="stylesheet" href="/public/css/global.css">
         <link rel="stylesheet" href="/public/css/dashboard.css">
+        <link rel="stylesheet" href="/public/css/notifications.css">
         <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>

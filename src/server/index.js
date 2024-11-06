@@ -402,10 +402,10 @@ app.post('/preferences', async (c) => {
     
     await userManager.updateUser(user.id, user)
     
-    // Set a specific flash message
+    // Set flash message with correct structure
     flash.set(c, {
       type: 'success',
-      message: 'Preferences saved! You\'ll receive an email when matches are made.'
+      text: 'Preferences saved! You\'ll receive an email when matches are made.'
     })
     
     return c.redirect('/')
@@ -413,7 +413,7 @@ app.post('/preferences', async (c) => {
     console.error('Preference save error:', error)
     flash.set(c, {
       type: 'error',
-      message: 'Error saving preferences. Please try again.'
+      text: 'Error saving preferences. Please try again.'
     })
     return c.redirect('/')
   }
