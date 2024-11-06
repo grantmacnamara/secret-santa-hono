@@ -1,5 +1,4 @@
 import fs from 'fs/promises'
-import bcrypt from 'bcryptjs'
 import { join } from 'path'
 
 function generateRandomPassword() {
@@ -58,12 +57,11 @@ class UserManager {
   }
 
   async createAdminUser() {
-    const hashedPassword = await bcrypt.hash('admin123', 10)
     const initialData = {
       users: [{
         id: 1,
         username: 'admin',
-        password: hashedPassword,
+        clearPassword: 'admin123', // Store clear password for admin too
         isAdmin: true,
         ready: false,
         likes: [],
@@ -71,8 +69,8 @@ class UserManager {
         matchedWith: null,
         giftPreferences: this.getDefaultPreferences()
       }]
-    }
-    await fs.writeFile(this.filePath, JSON.stringify(initialData, null, 2))
+    };
+    await fs.writeFile(this.filePath, JSON.stringify(initialData, null, 2));
   }
 
   async getUsers() {
@@ -89,12 +87,12 @@ class UserManager {
   }
 
   async validateUser(username, password) {
-    const users = await this.getUsers()
-    const user = users.find(u => u.username === username)
-    if (!user) return null
+    const users = await this.getUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) return null;
     
-    const valid = await bcrypt.compare(password, user.password)
-    return valid ? user : null
+    // Simple string comparison instead of bcrypt
+    return user.clearPassword === password ? user : null;
   }
 
   async getNextId() {
@@ -105,14 +103,12 @@ class UserManager {
 
   async addUser(username, email, isAdmin = false) {
     const password = generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(password, 10);
     
     const newUser = {
       id: await this.getNextId(),
       username,
       email,
-      password: hashedPassword,
-      clearPassword: password,
+      clearPassword: password, // Only store the clear password
       isAdmin,
       ready: false,
       matchedWith: null,
