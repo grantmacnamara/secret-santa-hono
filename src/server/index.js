@@ -56,6 +56,43 @@ app.post('/login', async (c) => {
   }
 })
 
+// Add auto-login route here, before the auth middleware
+app.get('/auto-login', async (c) => {
+  console.log('Auto-login route hit!');
+  const token = c.req.query('token');
+  console.log('Token received:', token);
+
+  if (!token) {
+    console.log('No token provided');
+    flash.set(c, { type: 'error', text: 'Login link is invalid' });
+    return c.redirect('/login');
+  }
+
+  const userManager = c.get('userManager');
+  console.log('UserManager:', userManager ? 'Available' : 'Not available');
+
+  try {
+    const user = await userManager.validateAutoLoginToken(token);
+    console.log('User found:', user);
+
+    if (!user) {
+      flash.set(c, { type: 'error', text: 'Invalid or expired login link' });
+      return c.redirect('/login');
+    }
+
+    setCookie(c, 'userId', user.id.toString(), {
+      path: '/',
+      httpOnly: true
+    });
+
+    return c.redirect('/');
+  } catch (error) {
+    console.error('Auto-login error:', error);
+    flash.set(c, { type: 'error', text: 'An error occurred during auto-login' });
+    return c.redirect('/login');
+  }
+});
+
 // Protected routes
 app.use('/admin/*', authMiddleware, adminMiddleware)
 app.use('/*', authMiddleware)
@@ -621,7 +658,7 @@ app.post('/admin/send-invites', adminMiddleware, async (c) => {
   
   for (const user of nonAdminUsers) {
     try {
-      await sendInviteEmail(user, appUrl);
+      await sendInviteEmail(user, appUrl, userManager);
       successCount++;
     } catch (error) {
       console.error(`Failed to send invite to ${user.email}:`, error);

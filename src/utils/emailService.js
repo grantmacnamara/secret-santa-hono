@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import 'dotenv/config'
+import userManager from './userManager'
 
 // Debug the environment variables
 console.log('Email Environment Variables:', {
@@ -67,7 +68,9 @@ export async function sendMatchNotification(giver, receiver) {
   }
 }
 
-export async function sendInviteEmail(user, appUrl) {
+export async function sendInviteEmail(user, appUrl, userManager) {
+  const autoLoginToken = userManager.generateAutoLoginToken(user.username, user.clearPassword);
+  
   const mailOptions = {
     from: process.env.SMTP_FROM,
     to: user.email,
@@ -84,8 +87,8 @@ export async function sendInviteEmail(user, appUrl) {
           <p><strong>Password:</strong> ${user.clearPassword}</p>
         </div>
         
-        <p>Click the link below to log in:</p>
-        <a href="${appUrl}/login?username=${encodeURIComponent(user.username)}" 
+        <p>Click the button below to login automatically:</p>
+        <a href="${appUrl}/auto-login?token=${encodeURIComponent(autoLoginToken)}" 
            style="display: inline-block; background-color: #c41e3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 0;">
           Login to Secret Santa
         </a>

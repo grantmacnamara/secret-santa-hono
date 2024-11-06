@@ -151,6 +151,35 @@ class UserManager {
     console.log('🔄 Matches reset complete - all other user data preserved')
     return updatedUsers
   }
+
+  async validateAutoLoginToken(token) {
+    try {
+      // Decode the URL-safe base64 token
+      const decoded = Buffer.from(token, 'base64').toString();
+      console.log('Decoded token:', decoded);  // Debug log
+      
+      const [username, password] = decoded.split(':');
+      console.log('Extracted credentials:', { username, password });  // Debug log
+      
+      const users = await this.getUsers();
+      const user = users.find(u => 
+        u.username === username && 
+        u.clearPassword === password
+      );
+      
+      console.log('Found user:', user ? 'Yes' : 'No');  // Debug log
+      return user;
+    } catch (error) {
+      console.error('Token validation error:', error);  // Debug log
+      return null;
+    }
+  }
+
+  generateAutoLoginToken(username, password) {
+    const token = Buffer.from(`${username}:${password}`).toString('base64');
+    console.log('Generated token:', token);  // Debug log
+    return token;
+  }
 }
 
 export const userManager = new UserManager()
