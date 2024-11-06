@@ -5,44 +5,47 @@ export function renderGiftPreferences(preferences = {}, config = {}, user = {}) 
     ...preferences
   }
 
-  prefs.likes = prefs.likes || []
-  prefs.dislikes = prefs.dislikes || []
+  // If preferences are saved, show the confirmation view
+  if (user.ready) {
+    return `
+      <div class="preferences-confirmation">
+        <h3>🎄 Your Preferences are Saved!</h3>
+        
+        <div class="saved-preferences">
+          <div class="preference-section">
+            <h4>Things You Like:</h4>
+            <ul>
+              <li>${prefs.likes[0] || ''}</li>
+              <li>${prefs.likes[1] || ''}</li>
+            </ul>
+          </div>
+          
+          <div class="preference-section">
+            <h4>Things You Dislike:</h4>
+            <ul>
+              <li>${prefs.dislikes[0] || ''}</li>
+              <li>${prefs.dislikes[1] || ''}</li>
+            </ul>
+          </div>
 
-  // Check if preferences have been saved (they exist in the user data)
-  const prefsAreSaved = Boolean(
-    user.giftPreferences?.likes?.[0] && 
-    user.giftPreferences?.likes?.[1] && 
-    user.giftPreferences?.dislikes?.[0] && 
-    user.giftPreferences?.dislikes?.[1]
-  )
+          <div class="price-section">
+            <h4>Gift Price Limit:</h4>
+            <p>£${config.priceRange || '0'}</p>
+          </div>
+        </div>
 
-  // Determine button state and text
-  const readyButtonState = () => {
-    if (!prefsAreSaved) {
-      return {
-        text: 'Ready?',
-        class: 'btn-secondary',
-        disabled: true
-      }
-    }
-    if (user.ready) {
-      return {
-        text: 'You\'re all ready! ✓',
-        class: 'btn-success',
-        disabled: false
-      }
-    }
-    return {
-      text: 'Ready?',
-      class: 'btn-primary',
-      disabled: false
-    }
+        <div class="next-steps">
+          <p>✨ Thank you for submitting your preferences!</p>
+          <p>📧 You'll receive an email when everyone has made their choices and matches have been made.</p>
+          <p>🎁 Feel free to log out and check your email later.</p>
+        </div>
+      </div>
+    `
   }
 
-  const readyButton = readyButtonState()
-
+  // If preferences aren't saved yet, show the input form
   return `
-    <form method="POST" class="gift-preferences">
+    <form method="POST" action="/preferences" class="gift-preferences">
       <div class="price-range-info">
         <h3>Gift Price Limit</h3>
         <p class="price-range-display">£${config.priceRange || '0'}</p>
@@ -85,18 +88,7 @@ export function renderGiftPreferences(preferences = {}, config = {}, user = {}) 
       </div>
 
       <div class="preference-actions">
-        <button type="submit" 
-                formaction="/preferences"
-                class="btn btn-primary">
-          Save Preferences
-        </button>
-
-        <button type="submit" 
-                formaction="/ready"
-                class="btn ${readyButton.class}"
-                ${readyButton.disabled ? 'disabled' : ''}>
-          ${readyButton.text}
-        </button>
+        <button type="submit" class="btn btn-primary">Save Preferences</button>
       </div>
     </form>
   `

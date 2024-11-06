@@ -678,3 +678,46 @@ button[disabled][formaction="/ready"]:hover::after {
   margin-bottom: 5px;
   z-index: 1;
 }
+
+.preferences-confirmation {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 2px solid var(--christmas-green);
+}
+
+.saved-preferences {
+  margin: 2rem 0;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.preference-section h4 {
+  color: var(--christmas-green);
+  margin-bottom: 0.5rem;
+}
+
+.preference-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.preference-section ul li {
+  background: white;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.next-steps {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #ddd;
+}
+
+.next-steps p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}

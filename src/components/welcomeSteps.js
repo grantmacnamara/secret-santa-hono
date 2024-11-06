@@ -1,7 +1,7 @@
 export function renderWelcomeSteps() {
   return `
     <div class="welcome-steps">
-      <h2>Getting Started 🎄</h2>
+      <h2>How it works! 🎄</h2>
       <ol class="steps-list">
         <li>👋 Welcome! We're excited to have you here</li>
         <li>⚙️ Update your preferences to help us find your perfect match</li>

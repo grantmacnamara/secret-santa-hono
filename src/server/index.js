@@ -9,6 +9,7 @@ import { renderGiftPreferences } from '../components/giftPreferences.js'
 import { flash } from '../utils/flash.js'
 import { sendMatchNotification } from '../utils/emailService.js'
 import { renderWelcomeSteps } from '../components/welcomeSteps.js'
+import { createNotification } from '../utils/notifications.js'
 
 export const app = new Hono()
 
@@ -330,6 +331,14 @@ app.get('/', async (c) => {
     }
   }
 
+  // Debug the flash message
+  const flashMessage = flash.get(c)
+  console.log('Flash message:', flashMessage)
+  
+  const notificationHtml = flashMessage 
+    ? createNotification(flashMessage.type, flashMessage.message)
+    : ''
+
   return c.html(`
     <!DOCTYPE html>
     <html>
@@ -338,12 +347,7 @@ app.get('/', async (c) => {
         <link rel="stylesheet" href="/public/css/global.css">
       </head>
       <body>
-        ${message ? `
-          <div class="notification notification-${message.type}">
-            ${message.text}
-            <button onclick="this.parentElement.remove()" class="notification-close">&times;</button>
-          </div>
-        ` : ''}
+        ${notificationHtml}
         <div class="container">
           <div class="card">
             <div class="dashboard-header">
@@ -471,35 +475,27 @@ app.post('/preferences', async (c) => {
     const user = c.get('user')
     const body = await c.req.parseBody()
     
-    // Get likes and dislikes from form, ensuring they're arrays
-    const likes = [
-      body['likes[0]'] || '',
-      body['likes[1]'] || ''
-    ].filter(Boolean)
-
-    const dislikes = [
-      body['dislikes[0]'] || '',
-      body['dislikes[1]'] || ''
-    ].filter(Boolean)
-
-    if (likes.length !== 2 || dislikes.length !== 2) {
-      throw new Error('Please provide exactly two likes and two dislikes')
+    // Update preferences and set ready status
+    user.giftPreferences = {
+      likes: [body['likes[0]'], body['likes[1]']],
+      dislikes: [body['dislikes[0]'], body['dislikes[1]']],
     }
-
-    await userManager.updateUser(user.id, {
-      giftPreferences: { likes, dislikes }
-    })
-
+    user.ready = true
+    
+    await userManager.updateUser(user.id, user)
+    
+    // Set a specific flash message
     flash.set(c, {
       type: 'success',
-      text: 'Preferences updated successfully!'
+      message: 'Preferences saved! You\'ll receive an email when matches are made.'
     })
-
+    
     return c.redirect('/')
   } catch (error) {
+    console.error('Preference save error:', error)
     flash.set(c, {
       type: 'error',
-      text: error.message || 'Failed to update preferences'
+      message: 'Error saving preferences. Please try again.'
     })
     return c.redirect('/')
   }
