@@ -17,10 +17,8 @@ EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-specific-password
 SMTP_FROM=Secret Santa <your-email@gmail.com>
 DEBUG=false`)
-  
   process.exit(1)
 }
-
 dotenv.config()
 
 export default defineConfig({
@@ -34,6 +32,16 @@ export default defineConfig({
     port: 3000
   },
   build: {
+    // Add these configurations for production build
+    ssr: './src/entry.js', // Same as your dev server entry
+    outDir: 'dist',
+    rollupOptions: {
+      input: './src/entry.js',
+      output: {
+        format: 'esm'
+      }
+    },
+    // Keep your existing build options
     commonjsOptions: {
       transformMixedEsModules: true
     }
@@ -46,4 +54,4 @@ export default defineConfig({
       '@': '/src'
     }
   }
-}) 
+})
