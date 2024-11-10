@@ -123,7 +123,7 @@ export function renderLoginPage(message = null) {
           <div class="card login-card">
             <h1 class="login-title">
               🎄 Macnamara's
-              <span>Secret Santa!</span>
+              <span>Secret Santa!!</span>
             </h1>
             <form action="/login" method="POST" class="login-form">
               <div class="form-group">
